@@ -8,7 +8,6 @@ public class Main extends Game {
 	public void create () {
 		GameScreen gameScreen = new GameScreen();
 		this.setScreen(gameScreen);
-		gameScreen.dispose();
 	}
 
 	public void render () {

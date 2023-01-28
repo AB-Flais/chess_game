@@ -9,12 +9,7 @@ public abstract class Piece {
 	private Texture lightTexture;
 	private Texture darkTexture;
 	
-	public Piece(String coordinate, Team team, Texture light, Texture dark) {
-		if (coordinate.length() < 2)
-			throw new IllegalArgumentException();
-		
-		x = coordinate.charAt(0) - 97;
-		y = coordinate.charAt(1) - 49;
+	public Piece(Team team, Texture light, Texture dark) {
 		this.team = team;
 		lightTexture = light;
 		darkTexture = dark;
@@ -23,5 +18,10 @@ public abstract class Piece {
 	public Team getTeam() { return team; }
 	public int getX() { return x; }
 	public int getY() { return y; }
-	public Texture getTexture() { return (team == Team.White)?lightTexture:darkTexture; };
+	public Texture getTexture() { return (team == Team.WHITE)?lightTexture:darkTexture; }
+
+	public void dispose() {
+		lightTexture.dispose();
+		darkTexture.dispose();
+	}
 }
