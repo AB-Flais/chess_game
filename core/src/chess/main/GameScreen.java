@@ -2,35 +2,64 @@ package chess.main;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
+import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.Timer;
 import com.badlogic.gdx.utils.Timer.Task;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 
 import chess.board.DefaultBoard;
+import chess.pieces.Knight;
+import chess.pieces.Team;
 
 public class GameScreen implements Screen {
-	SpriteBatch batch;
+	static final boolean delay = false;
 	
-	DefaultBoard board;
+	private SpriteBatch batch;
+	private OrthographicCamera camera;
+	private FitViewport fitViewport;
+	
+	private DefaultBoard board;
 	
 	public GameScreen () {
-		board = new DefaultBoard();
+		batch = new SpriteBatch();
+		camera = new OrthographicCamera();
+		board = new DefaultBoard(batch, camera);
+		fitViewport = new FitViewport(board.getWidth(),board.getHeight());
 	}
 	
 	@Override
 	public void show() {
+		if (delay) {
+			float delay = 10; // seconds
+
+			Timer.schedule(new Task(){
+			    public void run() {
+			        Gdx.app.exit();
+			    }
+			}, delay);
+		}
 	}
 
 	@Override
 	public void render(float delta) {
+		ScreenUtils.clear(49/255f,46/255f,43/255f,1);
+		
+		camera.update();
+		
+		batch.setProjectionMatrix(camera.combined);
+		
+		batch.begin();
+		batch.draw(new Knight("e4",Team.Black).getTexture(),0,0);
 		board.render();
+		batch.end();
 	}
 
 	@Override
 	public void resize(int width, int height) {
-		// TODO Auto-generated method stub
-		
+		fitViewport.update(width, height);
 	}
 
 	@Override

@@ -23,8 +23,9 @@ import chess.square.Square;
  * @author Aarón
  */
 public class DefaultBoard {
-	private SpriteBatch batch;
-	private OrthographicCamera camera;
+	SpriteBatch batch;
+	OrthographicCamera camera;
+	
 	/**
 	 * White font
 	 */
@@ -40,7 +41,7 @@ public class DefaultBoard {
 	
 	private int SQUARE_SIZE = 64;
 	private int WIDTH = 8;
-	private int HEIGHT = 9;
+	private int HEIGHT = 8;
 
 	/**
 	 * White square
@@ -55,9 +56,9 @@ public class DefaultBoard {
 	/**
 	 * Creates a board with the traditional mode initial settings
 	 */
-	public DefaultBoard() {
-		batch = new SpriteBatch();
-		camera = new OrthographicCamera();
+	public DefaultBoard(SpriteBatch batch, OrthographicCamera camera) {
+		this.batch = batch;
+		this.camera = camera;
 		
 		lightFont = new BitmapFont();
 		lightFont.setColor(0.95f,0.93f,0.832f,1); // Very light grey
@@ -130,20 +131,14 @@ public class DefaultBoard {
 	}
 
 	public void render() {
-		ScreenUtils.clear(0.61f, 0.70f, 0.48f,1);
-		
 		camera.update();
-	
-		batch.setProjectionMatrix(camera.combined);
-		
-		batch.begin();
 		// Shows the squares
 		for (int i = 0; i < WIDTH; i++) {
 			for (int j = 0; j < HEIGHT; j++) {
 				if ((i+ j%2)%2 == 0) 
-					batch.draw(darkSquareImage,squares[i][j].getX() + 1, squares[i][j].getY() + 1, SQUARE_SIZE - 2, SQUARE_SIZE - 2);
+					batch.draw(darkSquareImage,squares[i][j].getX(), squares[i][j].getY(), SQUARE_SIZE, SQUARE_SIZE);
 				else		
-					batch.draw(lightSquareImage,squares[i][j].getX() + 1, squares[i][j].getY() + 1, SQUARE_SIZE - 2, SQUARE_SIZE - 2);
+					batch.draw(lightSquareImage,squares[i][j].getX(), squares[i][j].getY(), SQUARE_SIZE, SQUARE_SIZE);
 			}
 		}
 		
@@ -164,7 +159,8 @@ public class DefaultBoard {
 				lightFont.draw(batch, "" + (char) (i + 97), SQUARE_SIZE * i + 55, 15);
 			else
 				darkFont.draw(batch, "" + (char) (i + 97), SQUARE_SIZE * i + 55, 15);
-		batch.end();
 	}
-	
+
+	public int getWidth() { return WIDTH; }
+	public int getHeight() { return HEIGHT; }
 }
