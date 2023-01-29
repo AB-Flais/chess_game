@@ -14,14 +14,20 @@ public class Board {
 	OrthographicCamera camera;
 	
 	private BitmapFont lightFont, darkFont;
-	private Texture lightSquareImage, darkSquareImage;
 
 	private Square[][] squares;
+	private Square lastSquareSelected;
 	
 	private int width, height;
 	private final int scale = 100;
 	
-	
+	/**
+	 * 
+	 * @param height
+	 * @param width
+	 * @param batch
+	 * @param camera
+	 */
 	public Board(int height, int width, SpriteBatch batch, OrthographicCamera camera) {
 		if (width <= 0 || height <= 0 || batch == null || camera == null) 
 			throw new IllegalArgumentException();
@@ -36,9 +42,6 @@ public class Board {
 		darkFont = new BitmapFont();
 		darkFont.setColor(0.488f, 0.578f, 0.363f, 1); // Subdued green
 		darkFont.getData().setScale(1.5f);
-		
-		lightSquareImage = new Texture(Gdx.files.internal("light_square.png"));
-		darkSquareImage = new Texture(Gdx.files.internal("dark_square.png"));
 		
 		this.width = width;
 		this.height = height;
@@ -64,6 +67,10 @@ public class Board {
 		y = coordinate.charAt(1) - 49;
 		return squares[x][y];
 	}
+	
+	public Square getSquare(int x, int y) {
+		return squares[x][y];
+	}
 
 	public void putPiece(Piece piece, String coordinate) {
 		int x, y;
@@ -82,9 +89,9 @@ public class Board {
 		for (int i = 0; i < width; i++)
 			for (int j = 0; j < height; j++)
 				if ((i+ j%2)%2 == 0) 
-					batch.draw(darkSquareImage, i*scale, j*scale, scale, scale);
+					batch.draw(squares[i][j].getDarkTexture(), i*scale, j*scale, scale, scale);
 				else
-					batch.draw(lightSquareImage, i*scale, j*scale, scale, scale);
+					batch.draw(squares[i][j].getLightTexture(), i*scale, j*scale, scale, scale);
 		
 		// Renders row numbers on the left column
 		for (int i = 1; i <= height; i++) 
@@ -105,16 +112,58 @@ public class Board {
 				squares[i][j].render(i,j,scale);
 	}
 
+	public void select(int x, int y) {
+		if (lastSquareSelected == getSquare(x,y)) {
+			for (Square[] row: squares)
+				for (Square square: row)
+					square.setTexture(SquareState.DEFAULT);
+			lastSquareSelected = null;
+		} else {
+			if (lastSquareSelected != null)
+				for (Square[] row: squares)
+					for (Square square: row)
+						square.setTexture(SquareState.DEFAULT);
+			getSquare(x,y).select();
+			lastSquareSelected = getSquare(x,y);
+			
+			boolean[][] possibleMoves = getSquare(x,y).showPossibleMoves(reduceBoard(),x,y);
+			
+			for (int i = 0; i < width; i++)
+				for (int j = 0; j < height; j++)
+					if (possibleMoves[i][j])
+						if (squares[i][j].getPiece() == null)
+							squares[i][j].setTexture(SquareState.POSSIBLE_MOVE);
+						else 
+							squares[i][j].setTexture(SquareState.POSSIBLE_CAPTURE);
+		}
+	}
+	
+	private Team[][] reduceBoard() {
+		Team[][] boardReduced = new Team[width][height];
+		
+		for (int i = 0; i < width; i++)
+			for (int j = 0; j < height; j++)
+				boardReduced[i][j] = squares[i][j].getTeam();
+				
+		return boardReduced;
+	}
+
 	public void dispose() {
 		Board.disposeBatch();
 		lightFont.dispose();
 		darkFont.dispose();
-		lightSquareImage.dispose();
-		darkSquareImage.dispose();
 		for (Square[] row: squares) 
 			for (Square square: row)
 				square.dispose();
+		Square.light.dispose();
+		Square.dark.dispose();
+		Square.darkSelected.dispose();
+		Square.lightSelected.dispose();
+		Square.possibleCapture.dispose();
+		Square.lightPossibleMove.dispose();
+		Square.darkPossibleMove.dispose();
 	}
+	
 	public static void disposeBatch() {
 		if (batch != null)
 			

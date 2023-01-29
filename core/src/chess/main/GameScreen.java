@@ -1,9 +1,12 @@
 package chess.main;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.InputAdapter;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.math.Vector;
+import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.Timer;
 import com.badlogic.gdx.utils.Timer.Task;
@@ -12,7 +15,7 @@ import com.badlogic.gdx.utils.viewport.FitViewport;
 import chess.board.Board;
 
 public class GameScreen implements Screen {
-	static final boolean delay = true;
+	static final boolean delay = false;
 	
 	SpriteBatch batch;
 	OrthographicCamera camera;
@@ -38,6 +41,23 @@ public class GameScreen implements Screen {
 			    }
 			}, delay);
 		}
+		Gdx.input.setInputProcessor(new InputAdapter() {
+			@Override
+			public boolean touchDown (int x, int y, int pointer, int button) {
+				int horizontalGutter = fitViewport.getLeftGutterWidth();
+				int verticalGutter = fitViewport.getBottomGutterHeight();
+				if (x > horizontalGutter && x < Gdx.graphics.getWidth() - horizontalGutter &&
+					y > verticalGutter && y < Gdx.graphics.getHeight() - verticalGutter) {
+					float width = (float) Gdx.graphics.getWidth() - horizontalGutter*2f;
+					float height = (float) Gdx.graphics.getHeight() - verticalGutter*2f;
+					width = (float) width/(float) board.getWidth();
+					height = (float) height/(float) board.getHeight();
+					
+					board.select((x-horizontalGutter)/(int)width, 7-(y-verticalGutter)/(int)height);
+				}
+				return true;
+			}
+		});
 	}
 
 	@Override
@@ -49,7 +69,7 @@ public class GameScreen implements Screen {
 		batch.setProjectionMatrix(camera.combined);
 		
 		batch.begin();
-		board.render();
+		board.render();	
 		batch.end();
 	}
 
