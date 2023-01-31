@@ -4,6 +4,7 @@ import java.util.Arrays;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 
 import chess.pieces.Piece;
 import chess.pieces.Team;
@@ -43,17 +44,9 @@ public class Square {
 	 * @param y column 
 	 * @param scale size of the piece, and number that is going to multiply x and y
 	 */
-	public void render(int x, int y, int scale) {
+	public void render(int x, int y, int scale, SpriteBatch batch) {
 		if (piece != null) 
-			Board.batch.draw(piece.getTexture(),x*scale, y*scale, scale, scale);
-	}
-
-	public void select() {
-		state = SquareState.SELECTED;
-	}
-	
-	public void unSelect() {
-		state = SquareState.DEFAULT;
+			batch.draw(piece.getTexture(),x*scale, y*scale, scale, scale);
 	}
 	
 	public Texture getDarkTexture() { 
@@ -81,7 +74,7 @@ public class Square {
 			piece.dispose();
 	}
 
-	public void setTexture(SquareState state) {
+	public void setState(SquareState state) {
 		this.state = state;
 	}
 
@@ -98,5 +91,9 @@ public class Square {
 		for (boolean[] row: possibleMoves)
 			Arrays.fill(row, false);
 		return possibleMoves;
+	}
+
+	public SquareState getState() {
+		return state;
 	}
 }

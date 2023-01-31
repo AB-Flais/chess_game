@@ -10,13 +10,45 @@ import chess.pieces.Piece;
 import chess.pieces.Team;
 
 public class Board {
-	static SpriteBatch batch;
-	OrthographicCamera camera;
+	
+	private class Position {
+		private Square square;
+		private int x;
+		private int y;
+		
+		public Position() {
+		}
+		
+		public Position(Square square, int x, int y) {
+			this.square = square;
+			this.x = x;
+			this.y = y;
+		}
+		
+		public Position(Position position) {
+			square = position.square;
+			x = position.x;
+			y = position.y;
+		}
+		
+		public Square getSquare() { return square; }
+		public int getX() { return x; }
+		public int getY() { return y; }
+		
+		public void setSquare (Square square) { this.square = square; }
+		public void setPosition (int x, int y) { this.x = x; this.y = y; }
+	}
+	
+	private SpriteBatch batch;
+	private OrthographicCamera camera;
+	
+	private Team turn;
 	
 	private BitmapFont lightFont, darkFont;
 
 	private Square[][] squares;
-	private Square lastSquareSelected;
+	private Position lastSquareSelected;
+	private Position lastMoveOrigin, lastMoveDestination;
 	
 	private int width, height;
 	private final int scale = 100;
@@ -32,8 +64,14 @@ public class Board {
 		if (width <= 0 || height <= 0 || batch == null || camera == null) 
 			throw new IllegalArgumentException();
 		
-		Board.batch = batch;
+		this.batch = batch;
 		this.camera = camera;
+		
+		turn = Team.WHITE;
+		
+		lastSquareSelected = new Position();
+		lastMoveDestination = new Position();
+		lastMoveOrigin = new Position();
 		
 		lightFont = new BitmapFont();
 		lightFont.setColor(0.95f,0.93f,0.832f,1); // Very light grey
@@ -109,33 +147,55 @@ public class Board {
 		
 		for (int i = 0; i < width; i++)
 			for (int j = 0; j < height; j++)
-				squares[i][j].render(i,j,scale);
+				squares[i][j].render(i,j,scale,batch);
 	}
 
 	public void select(int x, int y) {
-		if (lastSquareSelected == getSquare(x,y)) {
-			for (Square[] row: squares)
-				for (Square square: row)
-					square.setTexture(SquareState.DEFAULT);
-			lastSquareSelected = null;
+		Square square = getSquare(x,y); // Square the user has selected
+		
+		if (lastSquareSelected.getSquare() == square) {
+			clearBoard();
+			lastSquareSelected.setSquare(null);
+		} else if (square.getState() == SquareState.POSSIBLE_CAPTURE || square.getState() == SquareState.POSSIBLE_MOVE) {
+			// Move the pieces
+			square.setPiece(lastSquareSelected.getSquare().getPiece());
+			lastSquareSelected.getSquare().setPiece(null);
+			lastSquareSelected.getSquare().setState(SquareState.SELECTED);
+			
+			// Save last positions
+			lastMoveOrigin = new Position(lastSquareSelected);
+			lastMoveDestination = new Position(square,x,y);
+
+			lastMoveOrigin.square.setState(SquareState.SELECTED);
+			lastMoveDestination.square.setState(SquareState.SELECTED);
+			lastSquareSelected.setSquare(null);
+			clearBoard();
+			turn = turn==Team.WHITE?Team.BLACK:Team.WHITE;
 		} else {
-			if (lastSquareSelected != null)
-				for (Square[] row: squares)
-					for (Square square: row)
-						square.setTexture(SquareState.DEFAULT);
-			getSquare(x,y).select();
-			lastSquareSelected = getSquare(x,y);
+			if (lastSquareSelected.getSquare() != null)
+				clearBoard();
+			square.setState(SquareState.SELECTED);
+			lastSquareSelected.setSquare(square);
 			
-			boolean[][] possibleMoves = getSquare(x,y).showPossibleMoves(reduceBoard(),x,y);
-			
-			for (int i = 0; i < width; i++)
-				for (int j = 0; j < height; j++)
-					if (possibleMoves[i][j])
-						if (squares[i][j].getPiece() == null)
-							squares[i][j].setTexture(SquareState.POSSIBLE_MOVE);
-						else 
-							squares[i][j].setTexture(SquareState.POSSIBLE_CAPTURE);
+			if (square.getPiece() != null && square.getTeam() == turn) {
+				boolean[][] possibleMoves = getSquare(x,y).showPossibleMoves(reduceBoard(),x,y);
+				
+				for (int i = 0; i < width; i++)
+					for (int j = 0; j < height; j++)
+						if (possibleMoves[i][j])
+							squares[i][j].setState(squares[i][j].getPiece() == null?SquareState.POSSIBLE_MOVE:SquareState.POSSIBLE_CAPTURE);
+			}
 		}
+	}
+	
+	/**
+	 * Set all squares' state to default, apart from lastMovementOrigin and lastMovementDestination
+	 */
+	private void clearBoard() {
+		for (Square[] row: squares)
+			for (Square square: row)
+				if (square != lastMoveOrigin.getSquare() && square != lastMoveDestination.getSquare())
+					square.setState(SquareState.DEFAULT);
 	}
 	
 	private Team[][] reduceBoard() {
@@ -149,7 +209,7 @@ public class Board {
 	}
 
 	public void dispose() {
-		Board.disposeBatch();
+		batch.dispose();
 		lightFont.dispose();
 		darkFont.dispose();
 		for (Square[] row: squares) 
@@ -162,11 +222,5 @@ public class Board {
 		Square.possibleCapture.dispose();
 		Square.lightPossibleMove.dispose();
 		Square.darkPossibleMove.dispose();
-	}
-	
-	public static void disposeBatch() {
-		if (batch != null)
-			
-			batch.dispose();
 	}
 }

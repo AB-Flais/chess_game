@@ -26,7 +26,7 @@ public class Pawn extends Piece {
 			possibleMoves[x][y + 1*direction] = true;
 		
 		// If pawn's in start position
-		if (((y == 2 && getTeam() == Team.WHITE)||(y == 7 && getTeam() == Team.BLACK))  && reducedBoard[x][y + 2*direction] == null) 
+		if (((y == 1 && getTeam() == Team.WHITE)||(y == width - 2 && getTeam() == Team.BLACK))  && reducedBoard[x][y + 2*direction] == null) 
 			possibleMoves[x][y + 2*direction] = true;
 		
 		// Pawn's options to kill
