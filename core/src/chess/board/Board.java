@@ -31,11 +31,6 @@ public class Board {
 			y = position.y;
 		}
 		
-		public Square getSquare() { return square; }
-		public int getX() { return x; }
-		public int getY() { return y; }
-		
-		public void setSquare (Square square) { this.square = square; }
 		public void setPosition (int x, int y) { this.x = x; this.y = y; }
 	}
 	
@@ -105,10 +100,6 @@ public class Board {
 		y = coordinate.charAt(1) - 49;
 		return squares[x][y];
 	}
-	
-	public Square getSquare(int x, int y) {
-		return squares[x][y];
-	}
 
 	public void putPiece(Piece piece, String coordinate) {
 		int x, y;
@@ -151,39 +142,54 @@ public class Board {
 	}
 
 	public void select(int x, int y) {
-		Square square = getSquare(x,y); // Square the user has selected
+		Square square = squares[x][y]; // Square the user has selected
 		
-		if (lastSquareSelected.getSquare() == square) {
+		// If the square selected is the same already selected, deselect it
+		if (lastSquareSelected.square == square) {
 			clearBoard();
-			lastSquareSelected.setSquare(null);
+			lastSquareSelected.square = null;
+			
+		// If the square selected is a valid move
 		} else if (square.getState() == SquareState.POSSIBLE_CAPTURE || square.getState() == SquareState.POSSIBLE_MOVE) {
+			// En passant
+			if (square.getPiece() == null && square.getState() == SquareState.POSSIBLE_CAPTURE)
+				squares[x][y - 1 * ((Pawn) lastSquareSelected.square.getPiece()).getDirection()].setPiece(null);
+			
 			// Move the pieces
-			square.setPiece(lastSquareSelected.getSquare().getPiece());
-			lastSquareSelected.getSquare().setPiece(null);
-			lastSquareSelected.getSquare().setState(SquareState.SELECTED);
+			square.setPiece(lastSquareSelected.square.getPiece());
+			lastSquareSelected.square.setPiece(null);
+			lastSquareSelected.square.setState(SquareState.SELECTED);
 			
 			// Save last positions
 			lastMoveOrigin = new Position(lastSquareSelected);
 			lastMoveDestination = new Position(square,x,y);
 
-			lastMoveOrigin.square.setState(SquareState.SELECTED);
+			// Clean up the board
 			lastMoveDestination.square.setState(SquareState.SELECTED);
-			lastSquareSelected.setSquare(null);
+			lastSquareSelected.square = null;
 			clearBoard();
 			turn = turn==Team.WHITE?Team.BLACK:Team.WHITE;
-		} else {
-			if (lastSquareSelected.getSquare() != null)
-				clearBoard();
-			square.setState(SquareState.SELECTED);
-			lastSquareSelected.setSquare(square);
 			
+		// It's not the same square neither a valid move
+		} else {
+			clearBoard();
+			square.setState(SquareState.SELECTED);
+			lastSquareSelected.square = square;
+			lastSquareSelected.x = x; lastSquareSelected.y = y;
+			
+			// If the square selected contains a piece and it's team turn show the possible moves
 			if (square.getPiece() != null && square.getTeam() == turn) {
-				boolean[][] possibleMoves = getSquare(x,y).showPossibleMoves(reduceBoard(),x,y);
+				boolean[][] possibleMoves = squares[x][y].showPossibleMoves(reduceBoard(),x,y);
 				
 				for (int i = 0; i < width; i++)
 					for (int j = 0; j < height; j++)
 						if (possibleMoves[i][j])
-							squares[i][j].setState(squares[i][j].getPiece() == null?SquareState.POSSIBLE_MOVE:SquareState.POSSIBLE_CAPTURE);
+							// En passant
+							if (lastSquareSelected.square.getPiece() instanceof Pawn && squares[i][j].getPiece() == null && lastSquareSelected.x != i && lastSquareSelected.y != j)
+								squares[i][j].setState(SquareState.POSSIBLE_CAPTURE); 
+							else
+								squares[i][j].setState(squares[i][j].getPiece() == null?SquareState.POSSIBLE_MOVE:SquareState.POSSIBLE_CAPTURE);
+				
 			}
 		}
 	}
@@ -191,10 +197,11 @@ public class Board {
 	/**
 	 * Set all squares' state to default, apart from lastMovementOrigin and lastMovementDestination
 	 */
+	// BUG
 	private void clearBoard() {
 		for (Square[] row: squares)
 			for (Square square: row)
-				if (square != lastMoveOrigin.getSquare() && square != lastMoveDestination.getSquare())
+				if (square != lastMoveOrigin.square && square != lastMoveDestination.square)
 					square.setState(SquareState.DEFAULT);
 	}
 	
@@ -204,7 +211,15 @@ public class Board {
 		for (int i = 0; i < width; i++)
 			for (int j = 0; j < height; j++)
 				boardReduced[i][j] = squares[i][j].getTeam();
-				
+		
+		// En passant 
+		if (lastMoveDestination.square != null && lastMoveDestination.square.getPiece() instanceof Pawn && Math.abs(lastMoveDestination.y - lastMoveOrigin.y) == 2) {
+			int x = lastMoveDestination.x; int y = lastMoveDestination.y;
+			
+			boardReduced[x][y] = null;
+			boardReduced[x][y - 1 * ((Pawn)squares[x][y].getPiece()).getDirection()] = squares[x][y].getTeam();
+		}
+		
 		return boardReduced;
 	}
 
